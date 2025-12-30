@@ -1,5 +1,6 @@
 import { Invite } from "../models/Invite.js";
 import { toSearchKey } from "../utils/normalize.js";
+import { sendRsvpNotification } from "../utils/email.js";
 
 /** GET /api/invites/search?q=... */
 export async function searchInvites(req, res) {
@@ -46,6 +47,17 @@ export async function rsvp(req, res) {
   inv.message = message || "";
   inv.respondedAt = new Date();
   await inv.save();
+
+  // Send email notification
+  sendRsvpNotification({
+    familyName: inv.familyName,
+    members: inv.members,
+    status: inv.status,
+    attendeesCount: inv.attendeesCount,
+    adultCount: inv.adultCount,
+    childCount: inv.childCount,
+    message: inv.message,
+  }).catch(err => console.error("Email notification failed:", err));
 
   res.json({ ok: true });
 }
