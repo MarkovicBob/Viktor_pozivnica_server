@@ -1,6 +1,5 @@
 import { Invite } from "../models/Invite.js";
 import { toSearchKey } from "../utils/normalize.js";
-import { sendRsvpNotification } from "../utils/email.js";
 
 /** GET /api/invites/search?q=... */
 export async function searchInvites(req, res) {
@@ -25,8 +24,9 @@ export async function getByCode(req, res) {
 
 /** POST /api/rsvp */
 export async function rsvp(req, res) {
-  const { code, status, attendeesCount, message, adultCount, childCount } = req.body || {};
-  if (!code || !["accepted","declined"].includes(status)) {
+  const { code, status, attendeesCount, message, adultCount, childCount } =
+    req.body || {};
+  if (!code || !["accepted", "declined"].includes(status)) {
     return res.status(400).json({ error: "Bad request" });
   }
   const inv = await Invite.findOne({ invitationCode: code });
@@ -41,23 +41,15 @@ export async function rsvp(req, res) {
   }
 
   inv.status = status;
-  inv.attendeesCount = status === "accepted" ? Math.max(0, Number(attendeesCount) || 0) : 0;
-  inv.adultCount = status === "accepted" ? Math.max(0, Number(adultCount) || 0) : 0;
-  inv.childCount = status === "accepted" ? Math.max(0, Number(childCount) || 0) : 0;
+  inv.attendeesCount =
+    status === "accepted" ? Math.max(0, Number(attendeesCount) || 0) : 0;
+  inv.adultCount =
+    status === "accepted" ? Math.max(0, Number(adultCount) || 0) : 0;
+  inv.childCount =
+    status === "accepted" ? Math.max(0, Number(childCount) || 0) : 0;
   inv.message = message || "";
   inv.respondedAt = new Date();
   await inv.save();
-
-  // Send email notification
-  sendRsvpNotification({
-    familyName: inv.familyName,
-    members: inv.members,
-    status: inv.status,
-    attendeesCount: inv.attendeesCount,
-    adultCount: inv.adultCount,
-    childCount: inv.childCount,
-    message: inv.message,
-  }).catch(err => console.error("Email notification failed:", err));
 
   res.json({ ok: true });
 }
@@ -79,9 +71,13 @@ export async function adminCreateInvites(req, res) {
 /** GET /api/admin/rsvps */
 export async function adminListRsvps(req, res) {
   const status = (req.query.status || "all").toLowerCase();
-  const filter = (["accepted","declined","pending"].includes(status)) ? { status } : {};
+  const filter = ["accepted", "declined", "pending"].includes(status)
+    ? { status }
+    : {};
   const docs = await Invite.find(filter)
-    .select("familyName members seats status attendeesCount adultCount childCount message respondedAt invitationCode")
+    .select(
+      "familyName members seats status attendeesCount adultCount childCount message respondedAt invitationCode"
+    )
     .sort({ status: 1, familyName: 1 })
     .lean();
   res.json(docs);
@@ -90,14 +86,22 @@ export async function adminListRsvps(req, res) {
 /** GET /api/admin/rsvps/summary */
 export async function adminSummary(req, res) {
   const all = await Invite.find().select("status seats attendeesCount").lean();
-  let accepted = 0, declined = 0, pending = 0;
-  let totalSeats = 0, totalAttendees = 0;
+  let accepted = 0,
+    declined = 0,
+    pending = 0;
+  let totalSeats = 0,
+    totalAttendees = 0;
 
   for (const d of all) {
     totalSeats += d.seats || 0;
-    if (d.status === "accepted") { accepted++; totalAttendees += d.attendeesCount || 0; }
-    else if (d.status === "declined") { declined++; }
-    else { pending++; }
+    if (d.status === "accepted") {
+      accepted++;
+      totalAttendees += d.attendeesCount || 0;
+    } else if (d.status === "declined") {
+      declined++;
+    } else {
+      pending++;
+    }
   }
 
   res.json({
@@ -107,6 +111,8 @@ export async function adminSummary(req, res) {
     pendingFamilies: pending,
     totalSeats,
     totalAttendees,
-    acceptanceRate: all.length ? +(accepted / all.length * 100).toFixed(1) : 0
+    acceptanceRate: all.length
+      ? +((accepted / all.length) * 100).toFixed(1)
+      : 0,
   });
 }
