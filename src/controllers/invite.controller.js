@@ -16,7 +16,7 @@ export async function searchInvites(req, res) {
 /** GET /api/invites/by-code/:code */
 export async function getByCode(req, res) {
   const inv = await Invite.findOne({ invitationCode: req.params.code })
-    .select("familyName members seats status attendeesCount respondedAt")
+    .select("familyName members seats status attendeesCount adultCount childCount respondedAt")
     .lean();
   if (!inv) return res.status(404).json({ error: "Not found" });
   res.json(inv);
