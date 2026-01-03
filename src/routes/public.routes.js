@@ -1,13 +1,19 @@
-import { Router } from "express";
 import rateLimit from "express-rate-limit";
+import { Router } from "express";
+import {
+  getByCode,
+  rsvp,
+  searchInvites,
+} from "../controllers/invite.controller.js";
 import { asyncH } from "../utils/asyncHandler.js";
-import { searchInvites, getByCode, rsvp } from "../controllers/invite.controller.js";
 
 export const publicRouter = Router();
 
 // health i root
 publicRouter.get("/health", (_req, res) => res.json({ ok: true }));
-publicRouter.get("/", (_req, res) => res.json({ message: "Mina_pozivnica API is running 🚀" }));
+publicRouter.get("/", (_req, res) =>
+  res.json({ message: "Viktor_pozivnica API is running 🚀" })
+);
 
 // pretraga i kod
 publicRouter.get("/api/invites/search", asyncH(searchInvites));
